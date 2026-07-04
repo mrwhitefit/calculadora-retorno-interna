@@ -127,21 +127,6 @@ body{
 .xbtn:hover{background:rgba(226,59,74,.2);border-color:var(--coral);color:#fff;transform:rotate(90deg)}
 .addrow{margin-top:8px;display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--coral-l);background:rgba(251,86,89,.08);border:1.5px dashed rgba(251,86,89,.35);border-radius:12px;padding:10px 18px;cursor:pointer;font-family:inherit;transition:all .18s}
 .addrow:hover{background:rgba(251,86,89,.16);border-style:solid;transform:translateY(-1px);box-shadow:0 10px 26px rgba(251,86,89,.22)}
-/* toggle mapa */
-.tgl{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--muted);background:rgba(3,6,12,.4);border:1.5px solid rgba(255,255,255,.12);border-radius:99px;padding:7px 14px;cursor:pointer;font-family:inherit;transition:all .18s;flex-shrink:0}
-.tgl .sw{width:26px;height:15px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;transition:background .2s;flex-shrink:0}
-.tgl .sw::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform .2s}
-.tgl:hover{border-color:var(--coral);color:#fff}
-.tgl.on{color:#fff;border-color:rgba(251,86,89,.55);background:rgba(251,86,89,.12);box-shadow:0 0 20px rgba(251,86,89,.18)}
-.tgl.on .sw{background:var(--coral)}
-.tgl.on .sw::after{transform:translateX(11px)}
-/* mapa */
-#mapwrap{display:none;margin-top:12px;animation:riseS .35s ease both}
-#mapwrap.show{display:block}
-.lmap{height:250px;border-radius:15px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 2px 10px rgba(0,0,0,.35);z-index:0;background:#0D1626}
-.leaflet-container{font-family:'Manrope',sans-serif;background:#0D1626}
-.pricepin{background:#fff;border:2px solid #FB5659;color:#E23B4A;font-weight:800;font-size:11px;padding:3px 9px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap}
-.mapnote{margin-top:7px;font-size:10.5px;color:var(--muted-d);font-weight:600}
 
 /* ============ RESULTADOS ============ */
 .results{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:14px}
@@ -238,20 +223,17 @@ body{
       <div class="chead">
         <span class="ix">🏠</span>
         <div><div class="tt">Propiedades captadas</div><div class="sub">Cartera del periodo</div></div>
-        <button class="tgl" id="maptgl">🗺 Mapa <span class="sw"></span></button>
       </div>
-      <div class="thelp"><b>Honorario total</b> = valor × % honorarios · <b>Honorario neto</b> = (total ÷ nº AIOs) − gastos de la venta. Ciudad opcional (sitúa el inmueble en el mapa).</div>
+      <div class="thelp"><b>Honorario total</b> = valor × % honorarios · <b>Honorario neto</b> = (total ÷ nº AIOs) − gastos de la venta.</div>
       <div class="ptwrap">
         <table class="ptable">
           <thead><tr>
-            <th class="l">#</th><th>Valor</th><th class="l">Ciudad</th><th>% hon.</th><th>Nº AIOs</th><th>Gastos venta</th><th>Honorario total</th><th>Honorario neto</th><th></th>
+            <th class="l">#</th><th>Valor</th><th>% hon.</th><th>Nº AIOs</th><th>Gastos venta</th><th>Honorario total</th><th>Honorario neto</th><th></th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
       <button class="addrow" id="addrow">＋ Añadir inmueble</button>
-      <datalist id="cities"></datalist>
-      <div id="mapwrap"><div class="lmap" id="lmap"></div><div class="mapnote">Se muestran los inmuebles con ciudad indicada. La ciudad es opcional.</div></div>
     </div>
 
     <!-- ===== RESULTADOS ===== -->
@@ -281,35 +263,12 @@ body{
 <script>
 /* ===================== VALORES RECOMENDADOS (del Sheet) ===================== */
 const DEFAULTS={inversion:150,cpm:15,ctr:2,conv:20,cualif:30,cierre:20};
-const ROW_DEF={valor:'',ciudad:'',hon:4,aios:2,gastos:''};
+const ROW_DEF={valor:'',hon:4,aios:2,gastos:''};
 let rows=[
-  {valor:165000,ciudad:'Madrid',hon:4,aios:2,gastos:500},
-  {valor:720000,ciudad:'Barcelona',hon:3,aios:2,gastos:1000}
+  {valor:165000,hon:4,aios:2,gastos:500},
+  {valor:720000,hon:3,aios:2,gastos:1000}
 ];
 const S={...DEFAULTS};
-
-/* ===================== CIUDADES (para el mapa, opcional) ===================== */
-const CITY_COORDS={
-  'madrid':[40.4168,-3.7038],'barcelona':[41.3874,2.1686],'valencia':[39.4699,-0.3763],
-  'sevilla':[37.3891,-5.9845],'malaga':[36.7213,-4.4214],'bilbao':[43.263,-2.935],
-  'zaragoza':[41.6488,-0.8891],'alicante':[38.3452,-0.481],'murcia':[37.9922,-1.1307],
-  'palma':[39.5696,2.6502],'palma de mallorca':[39.5696,2.6502],'las palmas':[28.1235,-15.4363],
-  'santa cruz de tenerife':[28.4636,-16.2518],'tenerife':[28.2916,-16.6291],'granada':[37.1773,-3.5986],
-  'cordoba':[37.8882,-4.7794],'valladolid':[41.6523,-4.7245],'vigo':[42.2406,-8.7207],
-  'a coruna':[43.3623,-8.4115],'la coruna':[43.3623,-8.4115],'gijon':[43.5322,-5.6611],
-  'oviedo':[43.3614,-5.8593],'san sebastian':[43.3183,-1.9812],'donostia':[43.3183,-1.9812],
-  'santander':[43.4623,-3.8099],'pamplona':[42.8125,-1.6458],'logrono':[42.4627,-2.4449],
-  'toledo':[39.8628,-4.0273],'salamanca':[40.9701,-5.6635],'burgos':[42.3439,-3.6969],
-  'leon':[42.5987,-5.5671],'cadiz':[36.5271,-6.2886],'jerez':[36.6866,-6.1362],
-  'huelva':[37.2614,-6.9447],'almeria':[36.834,-2.4637],'marbella':[36.5101,-4.8825],
-  'tarragona':[41.1189,1.2445],'girona':[41.9794,2.8214],'lleida':[41.6176,0.62],
-  'castellon':[39.9864,-0.0513],'albacete':[38.9943,-1.8585],'badajoz':[38.8794,-6.9707],
-  'caceres':[39.4765,-6.3722],'vitoria':[42.8467,-2.6716],'andorra':[42.5063,1.5218],
-  'ibiza':[38.9067,1.4206],'menorca':[39.8885,4.2658],'mahon':[39.8885,4.2658]
-};
-const normCity=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-const cityCoords=s=>CITY_COORDS[normCity(s)]||null;
-document.getElementById('cities').innerHTML=['Madrid','Barcelona','Valencia','Sevilla','Málaga','Bilbao','Zaragoza','Alicante','Murcia','Palma de Mallorca','Las Palmas','Tenerife','Granada','Córdoba','Valladolid','Vigo','A Coruña','Gijón','Oviedo','San Sebastián','Santander','Pamplona','Logroño','Toledo','Salamanca','Burgos','León','Cádiz','Jerez','Huelva','Almería','Marbella','Tarragona','Girona','Lleida','Castellón','Albacete','Badajoz','Cáceres','Vitoria','Andorra','Ibiza','Menorca'].map(c=>`<option value="${c}">`).join('');
 
 /* ===================== HELPERS ===================== */
 function num(v){
@@ -373,7 +332,6 @@ function rowHTML(r,i){
   return `<tr class="prow" data-row="${i}" style="animation-delay:${i*0.04}s">
     <td><div><span class="idx">${i+1}</span></div></td>
     <td><div><input class="pin" data-k="valor" inputmode="decimal" placeholder="0" value="${r.valor!==''?grp(r.valor):''}"><span style="color:var(--muted-d);font-weight:700;margin-left:5px">€</span></div></td>
-    <td><div style="justify-content:flex-start"><input class="pin" style="text-align:left;min-width:92px" data-k="ciudad" list="cities" placeholder="—" value="${r.ciudad||''}"></div></td>
     <td><div><input class="pin" style="width:52px" data-k="hon" inputmode="decimal" value="${r.hon}"><span style="color:var(--muted-d);font-weight:700;margin-left:4px">%</span></div></td>
     <td><div><input class="pin" style="width:48px" data-k="aios" inputmode="decimal" value="${r.aios}"></div></td>
     <td><div><input class="pin" data-k="gastos" inputmode="decimal" placeholder="0" value="${r.gastos!==''?grp(r.gastos):''}"><span style="color:var(--muted-d);font-weight:700;margin-left:5px">€</span></div></td>
@@ -413,7 +371,6 @@ function refresh(){
   tween('s-anual',m.inv*12,eur);
   document.getElementById('s-npe').textContent=m.exclusivas>0?eur(m.honNeto/m.exclusivas):'—';
   renderFunnel(m);
-  if(typeof updateMap==='function')updateMap();
   firstPaint=false;
 }
 
@@ -430,7 +387,7 @@ document.addEventListener('input',e=>{
   if(inp.classList && inp.classList.contains('pin')){
     const tr=inp.closest('.prow'); if(!tr)return;
     const i=+tr.dataset.row, k=inp.dataset.k;
-    rows[i][k]= k==='ciudad' ? inp.value : ((k==='hon'||k==='aios') ? num(inp.value) : (inp.value.trim()===''?'':num(inp.value)));
+    rows[i][k]= (k==='hon'||k==='aios') ? num(inp.value) : (inp.value.trim()===''?'':num(inp.value));
     refresh();
   }
 });
@@ -453,62 +410,6 @@ document.getElementById('fs').addEventListener('click',()=>{
   if(document.fullscreenElement)document.exitFullscreen();
   else document.documentElement.requestFullscreen().catch(()=>{});
 });
-
-/* ===================== MAPA (toggle + Leaflet perezoso) ===================== */
-let mapOn=false, map=null, markersLayer=null, leafletReady=false, leafletLoading=false;
-try{mapOn=localStorage.getItem('cri_map')==='1';}catch(e){}
-const tglBtn=document.getElementById('maptgl');
-function loadLeaflet(cb){
-  if(window.L){leafletReady=true;return cb();}
-  if(leafletLoading)return;
-  leafletLoading=true;
-  const css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(css);
-  const js=document.createElement('script');js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-  js.onload=()=>{leafletReady=true;leafletLoading=false;cb();};
-  js.onerror=()=>{leafletLoading=false;};
-  document.head.appendChild(js);
-}
-function initMap(){
-  if(map)return;
-  map=L.map('lmap',{scrollWheelZoom:false,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18}).addTo(map);
-  markersLayer=L.layerGroup().addTo(map);
-  map.setView([40.2,-3.6],5);
-}
-function updateMap(){
-  if(!map||!mapOn)return;
-  markersLayer.clearLayers();
-  const seen={},pts=[];
-  rows.forEach((r,i)=>{
-    const c=cityCoords(r.ciudad); if(!c)return;
-    const k=normCity(r.ciudad), n=(seen[k]=(seen[k]||0)+1)-1;
-    const off=[[0,0],[0.028,0.03],[-0.03,0.022],[0.02,-0.032]][n%4];
-    const lat=c[0]+off[0], lng=c[1]+off[1];
-    const v=num(r.valor);
-    const label=v>0?(v>=1000000?dec(v/1000000,1)+'M €':grp(v/1000)+'k €'):('#'+(i+1));
-    const icon=L.divIcon({className:'',html:`<div class="pricepin">${label}</div>`,iconSize:null,iconAnchor:[24,12]});
-    const mk=L.marker([lat,lng],{icon}).addTo(markersLayer);
-    mk.bindPopup(`<b>Inmueble ${i+1} · ${r.ciudad}</b><br>Valor: ${v>0?eur(v):'—'}`);
-    pts.push([lat,lng]);
-  });
-  if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(0.35),{maxZoom:11});
-  else map.setView([40.2,-3.6],5);
-}
-function applyMapVisibility(){
-  const wrap=document.getElementById('mapwrap');
-  tglBtn.classList.toggle('on',mapOn);
-  wrap.classList.toggle('show',mapOn);
-  if(mapOn){
-    loadLeaflet(()=>{initMap();setTimeout(()=>{map.invalidateSize();updateMap();},60);});
-  }
-}
-tglBtn.addEventListener('click',()=>{
-  mapOn=!mapOn;
-  try{localStorage.setItem('cri_map',mapOn?'1':'0');}catch(e){}
-  applyMapVisibility();
-});
-applyMapVisibility();
 
 /* ===================== PARALLAX ===================== */
 (function(){
