@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Retorno · AIO · Interna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Anton&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+:root{
+  --coral:#FB5659;--coral-d:#E23B4A;--coral-l:#FF9A7B;--pos:#12B886;--pos-d:#0CA678;
+  --bg:#070B14;--panel:rgba(255,255,255,.042);--panel-b:rgba(255,255,255,.085);
+  --ink:#F4F7FC;--muted:#8EA0BE;--muted-d:#5E7397;
+}
+body{
+  font-family:'Manrope',system-ui,sans-serif;color:var(--ink);
+  background:#070B14;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--coral);color:#fff}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:rgba(105,117,134,.32);border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+
+/* ============ FONDO CINEMATOGRÁFICO ============ */
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg .base{position:absolute;inset:0;background:radial-gradient(1400px 900px at 78% -12%,#182642 0%,#0B1120 52%,#070B14 100%)}
+.blob{position:absolute;border-radius:50%;filter:blur(110px);will-change:transform}
+.b1{width:640px;height:640px;background:rgba(251,86,89,.20);top:-220px;right:-160px;animation:drift1 16s ease-in-out infinite}
+.b2{width:520px;height:520px;background:rgba(56,97,255,.13);bottom:-220px;left:-160px;animation:drift2 21s ease-in-out infinite}
+.b3{width:380px;height:380px;background:rgba(18,184,134,.09);top:38%;left:44%;animation:drift3 26s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,50px) scale(1.08)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,-45px) scale(1.06)}}
+@keyframes drift3{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-60px)}}
+.gridlines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:52px 52px;-webkit-mask-image:radial-gradient(75% 62% at 50% 26%,#000 30%,transparent 100%);mask-image:radial-gradient(75% 62% at 50% 26%,#000 30%,transparent 100%)}
+.sky{position:absolute;left:0;right:0;bottom:0;height:190px;display:flex;align-items:flex-end;justify-content:center;gap:8px;opacity:.20}
+.bld{width:46px;background:#101A2E;border-radius:4px 4px 0 0;background-image:radial-gradient(circle at 50% 50%,rgba(255,209,132,.8) 0 1.1px,transparent 1.6px);background-size:11px 15px;background-position:3px 6px;animation:twinkle 4.5s ease-in-out infinite}
+@keyframes twinkle{0%,100%{background-color:#101A2E}50%{background-color:#0C1424}}
+.grain{position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");animation:grain 8s steps(10) infinite}
+@keyframes grain{0%,100%{transform:translate(0,0)}10%{transform:translate(-3%,2%)}30%{transform:translate(2%,-3%)}50%{transform:translate(-2%,-2%)}70%{transform:translate(3%,2%)}90%{transform:translate(-1%,3%)}}
+.beam{position:absolute;top:0;left:50%;width:900px;height:420px;transform:translateX(-50%);background:radial-gradient(50% 100% at 50% 0%,rgba(251,86,89,.10),transparent 70%);animation:beam 7s ease-in-out infinite}
+@keyframes beam{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* ============ LAYOUT ============ */
+.wrap{position:relative;z-index:2;max-width:1600px;margin:0 auto;padding:26px 34px 70px}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes riseS{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* header */
+.top{display:flex;align-items:center;gap:22px;padding:4px 2px 26px;flex-wrap:wrap;animation:rise .7s .05s both}
+.top img{height:34px;filter:drop-shadow(0 4px 14px rgba(251,86,89,.25))}
+.hgroup{display:flex;flex-direction:column;gap:3px}
+.hkick{font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-d)}
+.htitle{font-family:'Anton',sans-serif;font-weight:400;text-transform:uppercase;font-size:30px;line-height:1;letter-spacing:.01em;color:#fff}
+.htitle em{font-style:normal;background:linear-gradient(100deg,var(--coral),var(--coral-l));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hright{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.badge-int{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--coral);background:rgba(251,86,89,.1);border:1px solid rgba(251,86,89,.32);border-radius:99px;padding:8px 15px;box-shadow:0 0 24px rgba(251,86,89,.12)}
+.badge-int .dot{width:7px;height:7px;border-radius:50%;background:var(--coral);box-shadow:0 0 10px var(--coral);animation:blink 1.7s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.hbtn{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--muted);background:var(--panel);border:1px solid var(--panel-b);border-radius:12px;padding:9px 15px;cursor:pointer;font-family:inherit;transition:all .18s}
+.hbtn:hover{color:#fff;border-color:var(--coral);transform:translateY(-1px);box-shadow:0 8px 22px rgba(251,86,89,.18)}
+
+.grid{display:grid;grid-template-columns:400px 1fr;gap:22px;align-items:start}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}}
+.col-l{display:flex;flex-direction:column;gap:22px}
+
+/* ============ CARDS ============ */
+.card{position:relative;background:linear-gradient(165deg,rgba(255,255,255,.055),rgba(255,255,255,.022));border:1px solid var(--panel-b);border-radius:24px;padding:24px 24px 22px;backdrop-filter:blur(12px);box-shadow:0 26px 60px rgba(3,6,12,.5),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .25s ease,box-shadow .25s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 34px 70px rgba(3,6,12,.55),inset 0 1px 0 rgba(255,255,255,.09)}
+.card.a1{animation:rise .7s .12s both}.card.a2{animation:rise .7s .22s both}.card.a3{animation:rise .7s .18s both}
+.card h3{margin:0;display:flex;align-items:center;gap:11px;font-family:'Anton',sans-serif;font-weight:400;font-size:16px;letter-spacing:.05em;text-transform:uppercase;color:#fff}
+.card h3 .ix{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:15px;background:linear-gradient(135deg,var(--coral),var(--coral-d));box-shadow:0 8px 20px rgba(251,86,89,.4),inset 0 1px 0 rgba(255,255,255,.25)}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--muted-d);margin:4px 0 15px 43px}
+
+/* input rows */
+.frow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9.5px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+.frow:last-child{border-bottom:0}
+.frow .lbl{display:flex;flex-direction:column;gap:2px;min-width:0}
+.frow .lbl .n{font-size:13.5px;font-weight:700;color:#DCE6F5;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.frow .lbl .h{font-size:11px;color:var(--muted-d);font-weight:500;line-height:1.3}
+.rec{font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--pos);background:rgba(18,184,134,.12);border:1px solid rgba(18,184,134,.3);border-radius:99px;padding:2px 6px;white-space:nowrap}
+.inp{position:relative;flex-shrink:0}
+.inp input{width:120px;text-align:right;font-family:inherit;font-weight:800;font-size:15px;color:#fff;background:rgba(3,6,12,.6);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 30px 10px 12px;outline:none;transition:all .18s;font-variant-numeric:tabular-nums}
+.inp input:focus{border-color:var(--coral);box-shadow:0 0 0 3px rgba(251,86,89,.16),0 0 26px rgba(251,86,89,.22)}
+.inp .u{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--muted-d);pointer-events:none}
+.out{flex-shrink:0;min-width:120px;text-align:right;font-weight:800;font-size:15px;color:var(--coral-l);font-variant-numeric:tabular-nums;background:rgba(251,86,89,.07);border:1px solid rgba(251,86,89,.16);border-radius:12px;padding:9px 13px;transition:box-shadow .2s}
+.out.calc{color:#BFEBD9;background:rgba(18,184,134,.07);border-color:rgba(18,184,134,.18)}
+
+/* ============ EMBUDO ============ */
+.funnel{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.fnrow{display:flex;align-items:center;gap:11px}
+.fout{font-weight:800;font-size:14.5px;color:#DCE6F5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fnrow:last-child .fout{color:#7FE8C4;text-shadow:0 0 16px rgba(18,184,134,.4)}
+.fbar{position:relative;height:36px;border-radius:10px;display:flex;align-items:center;padding:0 13px;min-width:30px;overflow:hidden;transition:width .7s cubic-bezier(.22,1,.36,1);box-shadow:0 6px 16px rgba(251,86,89,.18);flex-shrink:0}
+.fbar.s1{background:linear-gradient(90deg,#FB5659,#E23B4A)}
+.fbar.s2{background:linear-gradient(90deg,#F97362,#E85466)}
+.fbar.s3{background:linear-gradient(90deg,#EF7A6E,#D8607A)}
+.fbar.s4{background:linear-gradient(90deg,#C86FA0,#9E63C0)}
+.fbar.s5{background:linear-gradient(90deg,var(--pos),var(--pos-d));box-shadow:0 6px 18px rgba(18,184,134,.3)}
+.fbar::after{content:"";position:absolute;top:0;bottom:0;width:60%;left:-70%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.28),transparent);animation:shimmer 3.2s ease-in-out infinite}
+.fbar.s2::after{animation-delay:.25s}.fbar.s3::after{animation-delay:.5s}.fbar.s4::after{animation-delay:.75s}.fbar.s5::after{animation-delay:1s}
+@keyframes shimmer{0%{left:-70%}55%,100%{left:120%}}
+.fbar .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.94);white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+
+/* ============ TABLA PROPIEDADES ============ */
+.ptable{width:100%;border-collapse:separate;border-spacing:0 9px;margin-top:6px}
+.ptable th{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-d);text-align:right;padding:0 10px 4px;white-space:nowrap}
+.ptable th.l{text-align:left}
+.ptable td{padding:0}
+.prow{animation:riseS .4s ease both}
+.prow td>div{background:rgba(3,6,12,.45);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);height:54px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;transition:background .2s}
+.prow:hover td>div{background:rgba(3,6,12,.62)}
+.prow td:first-child>div{border-left:1px solid rgba(255,255,255,.06);border-radius:13px 0 0 13px;padding-left:14px}
+.prow td:last-child>div{border-right:1px solid rgba(255,255,255,.06);border-radius:0 13px 13px 0}
+.prow .idx{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,rgba(251,86,89,.25),rgba(226,59,74,.15));border:1px solid rgba(251,86,89,.3);color:var(--coral-l);font-weight:800;font-size:12px;display:grid;place-items:center;flex-shrink:0}
+.pin{width:100%;text-align:right;font-family:inherit;font-weight:800;font-size:14.5px;color:#fff;background:transparent;border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 9px;outline:none;transition:all .18s;font-variant-numeric:tabular-nums}
+.pin:focus{border-color:var(--coral);box-shadow:0 0 0 3px rgba(251,86,89,.14),0 0 20px rgba(251,86,89,.18);background:rgba(3,6,12,.7)}
+.pin::placeholder{color:var(--muted-d);font-weight:600}
+.pcell{font-weight:800;font-size:14.5px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.pcell.tot{color:var(--coral-l)}
+.pcell.net{color:#7FE8C4;text-shadow:0 0 18px rgba(18,184,134,.35)}
+.xbtn{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-size:15px;cursor:pointer;display:grid;place-items:center;transition:.15s;flex-shrink:0}
+.xbtn:hover{background:rgba(226,59,74,.2);border-color:var(--coral);color:#fff;transform:rotate(90deg)}
+.addrow{margin-top:8px;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--coral-l);background:rgba(251,86,89,.08);border:1.5px dashed rgba(251,86,89,.35);border-radius:13px;padding:12px 20px;cursor:pointer;font-family:inherit;transition:all .18s}
+.addrow:hover{background:rgba(251,86,89,.16);border-style:solid;transform:translateY(-1px);box-shadow:0 10px 26px rgba(251,86,89,.22)}
+.thelp{margin:2px 0 12px 43px;font-size:11.5px;color:var(--muted-d);line-height:1.45}
+.thelp b{color:var(--muted)}
+
+/* ============ RESULTADOS ============ */
+.res-eyebrow{margin:36px 2px 14px;display:flex;align-items:center;gap:14px;animation:rise .7s .3s both}
+.res-eyebrow .t{font-family:'Anton',sans-serif;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:#fff}
+.res-eyebrow .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(251,86,89,.5),transparent)}
+.results{display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:18px;animation:rise .7s .34s both}
+@media(max-width:1100px){.results{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.results{grid-template-columns:1fr}}
+.kpi{position:relative;background:linear-gradient(165deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid var(--panel-b);border-radius:22px;padding:22px 24px;overflow:hidden;transition:transform .22s,box-shadow .22s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 24px 50px rgba(3,6,12,.5)}
+.kpi::before{content:"";position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)}
+.kpi .kl{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.kpi .kv{font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(24px,2.5vw,42px);line-height:1;letter-spacing:.01em;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi .ks{font-size:11.5px;color:var(--muted-d);font-weight:600;margin-top:8px}
+.kbump{animation:bump .5s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+
+/* ROAS hero con borde conic rotatorio */
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+.roaswrap{position:relative;border-radius:24px;padding:1.6px;background:conic-gradient(from var(--ang),#FB5659,#FF9A7B,#E23B4A,#FF6B62,#FB5659);animation:spin 5s linear infinite;box-shadow:0 26px 60px rgba(251,86,89,.35)}
+@keyframes spin{to{--ang:360deg}}
+.roas{position:relative;height:100%;border-radius:22.5px;background:linear-gradient(160deg,#E0454F 0%,#B92B3F 55%,#8E1F33 100%);padding:22px 24px;overflow:hidden}
+.roas::before{content:"";position:absolute;inset:-40% -30% auto auto;width:230px;height:230px;background:radial-gradient(circle,rgba(255,255,255,.3),transparent 70%);pointer-events:none}
+.roas::after{content:"";position:absolute;top:0;bottom:0;width:46%;left:-60%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.22),transparent);animation:shimmer 4s ease-in-out infinite;pointer-events:none}
+.roas .kl{font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.roas .kl .pill{font-size:8.5px;background:rgba(255,255,255,.18);border-radius:99px;padding:2px 8px;letter-spacing:.08em}
+.roas .kv{font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(36px,3.5vw,56px);line-height:1;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:0 4px 26px rgba(0,0,0,.35),0 0 40px rgba(255,255,255,.22)}
+.roas .kv .x{font-size:30px;opacity:.85;margin-left:2px}
+.roas .ks{font-size:12px;color:rgba(255,255,255,.85);font-weight:700;margin-top:9px}
+.roas .ks b{color:#fff}
+
+/* secundarios */
+.subkpis{margin-top:18px;display:flex;flex-wrap:wrap;gap:14px;animation:rise .7s .42s both}
+.subk{flex:1;min-width:160px;background:var(--panel);border:1px solid var(--panel-b);border-radius:16px;padding:14px 18px;transition:transform .2s,border-color .2s}
+.subk:hover{transform:translateY(-2px);border-color:rgba(251,86,89,.3)}
+.subk .sl{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-d)}
+.subk .sv{font-weight:800;font-size:20px;margin-top:5px;font-variant-numeric:tabular-nums;color:#DCE6F5}
+.foot{margin-top:40px;text-align:center;font-size:11px;color:var(--muted-d);font-weight:600;animation:rise .7s .5s both}
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="base"></div>
+  <div class="gridlines"></div>
+  <div class="beam"></div>
+  <div class="blob b1" data-px="26"></div>
+  <div class="blob b2" data-px="-20"></div>
+  <div class="blob b3" data-px="14"></div>
+  <div class="sky" id="sky"></div>
+</div>
+<div class="grain"></div>
+
+<div class="wrap">
+
+  <div class="top">
+    <img src="logos/aio-blanco.png" alt="AIO">
+    <div class="hgroup">
+      <div class="hkick">Grupo Rascacielos · Herramienta de dirección</div>
+      <div class="htitle">Calculadora de <em>retorno</em></div>
+    </div>
+    <div class="hright">
+      <div class="badge-int"><span class="dot"></span>Uso interno</div>
+      <button class="hbtn" id="fs">⛶ Pantalla completa</button>
+      <button class="hbtn" id="reset">↺ Recomendados</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- COLUMNA IZQUIERDA -->
+    <div class="col-l">
+
+      <div class="card a1">
+        <h3><span class="ix">📣</span> Captación inorgánica</h3>
+        <div class="eyebrow">Embudo de anuncios</div>
+
+        <div class="frow">
+          <div class="lbl"><div class="n">Inversión mensual</div><div class="h">Lo que inviertes al mes en anuncios</div></div>
+          <div class="inp"><input data-in="inversion" inputmode="decimal"><span class="u">€</span></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">CPM <span class="rec">Recomendado</span></div><div class="h">Coste por mil impresiones</div></div>
+          <div class="inp"><input data-in="cpm" inputmode="decimal"></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">Impresiones</div><div class="h">Inversión ÷ CPM × 1.000</div></div>
+          <div class="out calc" id="o-impresiones">—</div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">CTR (% de clic) <span class="rec">Recomendado</span></div><div class="h">% de clics sobre impresiones</div></div>
+          <div class="inp"><input data-in="ctr" inputmode="decimal"><span class="u">%</span></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">Clics</div><div class="h">Impresiones × CTR</div></div>
+          <div class="out calc" id="o-clics">—</div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">% conversión <span class="rec">Recomendado</span></div><div class="h">% de clics que dejan sus datos</div></div>
+          <div class="inp"><input data-in="conv" inputmode="decimal"><span class="u">%</span></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">Nº leads</div><div class="h">Clics × % conversión</div></div>
+          <div class="out calc" id="o-leads">—</div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">CPL</div><div class="h">Coste por lead · Inversión ÷ leads</div></div>
+          <div class="out calc" id="o-cpl">—</div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">% cualificación a llamada <span class="rec">Recomendado</span></div><div class="h">% de leads que pasan a llamada</div></div>
+          <div class="inp"><input data-in="cualif" inputmode="decimal"><span class="u">%</span></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">Llamadas cualificadas</div><div class="h">Leads × % cualificación</div></div>
+          <div class="out calc" id="o-llamadas">—</div>
+        </div>
+
+        <div class="funnel">
+          <div class="fnrow"><div class="fbar s1" id="fb0"><span class="fl">Impresiones</span></div><span class="fout" id="fv0">0</span></div>
+          <div class="fnrow"><div class="fbar s2" id="fb1"><span class="fl">Clics</span></div><span class="fout" id="fv1">0</span></div>
+          <div class="fnrow"><div class="fbar s3" id="fb2"><span class="fl">Leads</span></div><span class="fout" id="fv2">0</span></div>
+          <div class="fnrow"><div class="fbar s4" id="fb3"><span class="fl">Llamadas</span></div><span class="fout" id="fv3">0</span></div>
+          <div class="fnrow"><div class="fbar s5" id="fb4"><span class="fl">Exclusivas</span></div><span class="fout" id="fv4">0</span></div>
+        </div>
+      </div>
+
+      <div class="card a2">
+        <h3><span class="ix">🤝</span> Captación general</h3>
+        <div class="eyebrow">De llamada a exclusiva</div>
+
+        <div class="frow">
+          <div class="lbl"><div class="n">Llamadas totales</div><div class="h">Heredado del embudo (llamadas cualificadas)</div></div>
+          <div class="out calc" id="o-llamtot">—</div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">% cierre de exclusiva <span class="rec">Recomendado</span></div><div class="h">% de llamadas que acaban en exclusiva</div></div>
+          <div class="inp"><input data-in="cierre" inputmode="decimal"><span class="u">%</span></div>
+        </div>
+        <div class="frow">
+          <div class="lbl"><div class="n">Nº de exclusivas</div><div class="h">Llamadas totales × % cierre</div></div>
+          <div class="out" id="o-exclusivas">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA -->
+    <div>
+      <div class="card a3">
+        <h3><span class="ix">🏠</span> Propiedades captadas</h3>
+        <div class="thelp"><b>Honorario total</b> = valor × % honorarios · <b>Honorario neto</b> = (total ÷ nº AIOs colaboradores) − gastos de la venta.</div>
+
+        <div style="overflow-x:auto">
+        <table class="ptable">
+          <thead>
+            <tr>
+              <th class="l">Inmueble</th>
+              <th>Valor</th>
+              <th>% hon.</th>
+              <th>Nº AIOs</th>
+              <th>Gastos venta</th>
+              <th>Honorario total</th>
+              <th>Honorario neto</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        </div>
+        <button class="addrow" id="addrow">＋ Añadir inmueble</button>
+      </div>
+
+      <div class="res-eyebrow"><span class="t">Resultados</span><span class="line"></span></div>
+      <div class="results">
+        <div class="kpi"><div class="kl">Valor total de propiedades</div><div class="kv" id="k-valor">0 €</div><div class="ks">Suma del valor de los inmuebles</div></div>
+        <div class="kpi"><div class="kl">Honorarios totales</div><div class="kv" id="k-hontot">0 €</div><div class="ks">Comisión bruta generada</div></div>
+        <div class="kpi"><div class="kl">Honorarios netos</div><div class="kv" id="k-honneto">0 €</div><div class="ks">Lo que te llevas tras split y gastos</div></div>
+        <div class="roaswrap"><div class="roas">
+          <div class="kl">ROAS <span class="pill">Retorno de la inversión en ads</span></div>
+          <div class="kv"><span id="k-roas">0</span><span class="x">×</span></div>
+          <div class="ks">Por cada <b>1 €</b> invertido vuelven <b id="k-roas2">0 €</b> netos</div>
+        </div></div>
+      </div>
+
+      <div class="subkpis">
+        <div class="subk"><div class="sl">Nº de inmuebles</div><div class="sv" id="s-num">0</div></div>
+        <div class="subk"><div class="sl">Coste por exclusiva</div><div class="sv" id="s-cpe">—</div></div>
+        <div class="subk"><div class="sl">Coste anual de anuncios</div><div class="sv" id="s-anual">—</div></div>
+        <div class="subk"><div class="sl">Neto por exclusiva</div><div class="sv" id="s-npe">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Todos los derechos reservados · Grupo Rascacielos</div>
+</div>
+
+<script>
+/* ===================== VALORES RECOMENDADOS (del Sheet) ===================== */
+const DEFAULTS={inversion:150,cpm:15,ctr:2,conv:20,cualif:30,cierre:20};
+const ROW_DEF={valor:'',hon:4,aios:2,gastos:''};
+let rows=[
+  {valor:165000,hon:4,aios:2,gastos:500},
+  {valor:720000,hon:3,aios:2,gastos:1000}
+];
+const S={...DEFAULTS};
+
+/* ===================== HELPERS ===================== */
+function num(v){
+  if(typeof v==='number')return v;
+  if(v==null||v==='')return 0;
+  let s=String(v).trim().replace(/[€%\s]/g,'').replace(/[^\d,.-]/g,'');
+  const lc=s.lastIndexOf(','),ld=s.lastIndexOf('.');
+  if(lc>-1&&ld>-1){ s = lc>ld ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,''); }
+  else if(lc>-1){ s=s.replace(/\./g,'').replace(',','.'); }
+  return parseFloat(s)||0;
+}
+const grp=n=>String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const eur=n=>grp(n)+' €';
+function dec(n,d=2){return (n||0).toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});}
+const eurDec=n=>dec(n,2)+' €';
+
+/* ===================== MODELO (idéntico al Sheet, verificado) ===================== */
+function compute(){
+  const inv=S.inversion, cpm=S.cpm, ctr=S.ctr/100, conv=S.conv/100, cualif=S.cualif/100, cierre=S.cierre/100;
+  const impresiones = cpm>0 ? inv/cpm*1000 : 0;
+  const clics = impresiones*ctr;
+  const leads = clics*conv;
+  const cpl = leads>0 ? inv/leads : 0;
+  const llamadas = leads*cualif;
+  const llamTot = llamadas;
+  const exclusivas = llamTot*cierre;
+  const P=rows.map(r=>{
+    const valor=num(r.valor), hon=num(r.hon), aios=num(r.aios)||1, gastos=num(r.gastos);
+    const total = valor*hon/100;
+    const neto = total/aios - gastos;
+    return {valor,total,neto:Math.max(0,neto)};
+  });
+  const valorTotal=P.reduce((a,p)=>a+p.valor,0);
+  const honTotal=P.reduce((a,p)=>a+p.total,0);
+  const honNeto=P.reduce((a,p)=>a+p.neto,0);
+  const roas = inv>0 ? honNeto/inv : 0;
+  const cpe = exclusivas>0 ? inv/exclusivas : 0;
+  return {inv,impresiones,clics,leads,cpl,llamadas,llamTot,exclusivas,P,valorTotal,honTotal,honNeto,roas,cpe};
+}
+
+/* ===================== COUNT-UP (tween) ===================== */
+let firstPaint=true;
+const disp={},anims={};
+function tween(id,target,fmt,bump){
+  const el=document.getElementById(id); if(!el)return;
+  if(firstPaint){disp[id]=target;el.textContent=fmt(target);return;}
+  const from=disp[id]??0;
+  if(Math.abs(from-target)<1e-9){el.textContent=fmt(target);return;}
+  cancelAnimationFrame(anims[id]);
+  if(bump){el.classList.remove('kbump');void el.offsetWidth;el.classList.add('kbump');}
+  const t0=performance.now(),dur=620,ease=t=>1-Math.pow(1-t,3);
+  const step=now=>{
+    const p=Math.min(1,(now-t0)/dur),v=from+(target-from)*ease(p);
+    disp[id]=v;el.textContent=fmt(v);
+    if(p<1)anims[id]=requestAnimationFrame(step);
+  };
+  anims[id]=requestAnimationFrame(step);
+}
+
+/* ===================== RENDER FILAS ===================== */
+function rowHTML(r,i){
+  return `<tr class="prow" data-row="${i}" style="animation-delay:${i*0.05}s">
+    <td><div><span class="idx">${i+1}</span></div></td>
+    <td><div><input class="pin" data-k="valor" inputmode="decimal" placeholder="0" value="${r.valor!==''?grp(r.valor):''}"><span style="color:var(--muted-d);font-weight:700;margin-left:5px">€</span></div></td>
+    <td><div><input class="pin" style="width:56px" data-k="hon" inputmode="decimal" value="${r.hon}"><span style="color:var(--muted-d);font-weight:700;margin-left:4px">%</span></div></td>
+    <td><div><input class="pin" style="width:52px" data-k="aios" inputmode="decimal" value="${r.aios}"></div></td>
+    <td><div><input class="pin" data-k="gastos" inputmode="decimal" placeholder="0" value="${r.gastos!==''?grp(r.gastos):''}"><span style="color:var(--muted-d);font-weight:700;margin-left:5px">€</span></div></td>
+    <td><div><span class="pcell tot" id="rt-${i}">0 €</span></div></td>
+    <td><div><span class="pcell net" id="rn-${i}">0 €</span></div></td>
+    <td><div style="justify-content:center"><button class="xbtn" data-del="${i}" title="Quitar">×</button></div></td>
+  </tr>`;
+}
+function renderRows(){
+  Object.keys(disp).forEach(k=>{if(k.startsWith('rt-')||k.startsWith('rn-'))delete disp[k];});
+  document.getElementById('rows').innerHTML=rows.map(rowHTML).join('');
+}
+
+/* ===================== EMBUDO ===================== */
+function renderFunnel(m){
+  const stages=[m.impresiones,m.clics,m.leads,m.llamadas,m.exclusivas];
+  const max=Math.max(...stages,1);
+  stages.forEach((v,i)=>{
+    const w=Math.max(24, Math.sqrt(v/max)*76); // deja sitio al valor fuera de la barra
+    document.getElementById('fb'+i).style.width=w+'%';
+    tween('fv'+i, v, i>=3 ? x=>dec(x,1) : x=>grp(x));
+  });
+}
+
+/* ===================== REFRESH ===================== */
+function refresh(){
+  const m=compute();
+  tween('o-impresiones',m.impresiones,grp);
+  tween('o-clics',m.clics,grp);
+  tween('o-leads',m.leads,grp);
+  tween('o-cpl',m.cpl,eurDec);
+  tween('o-llamadas',m.llamadas,x=>dec(x,1));
+  tween('o-llamtot',m.llamTot,x=>dec(x,1));
+  tween('o-exclusivas',m.exclusivas,x=>dec(x,1));
+  m.P.forEach((p,i)=>{tween('rt-'+i,p.total,eur);tween('rn-'+i,p.neto,eur);});
+  tween('k-valor',m.valorTotal,eur,true);
+  tween('k-hontot',m.honTotal,eur,true);
+  tween('k-honneto',m.honNeto,eur,true);
+  tween('k-roas',m.roas,x=>dec(x,2),true);
+  tween('k-roas2',m.roas,eurDec);
+  document.getElementById('s-num').textContent=rows.length;
+  document.getElementById('s-cpe').textContent=m.exclusivas>0?eurDec(m.cpe):'—';
+  tween('s-anual',m.inv*12,eur);
+  document.getElementById('s-npe').textContent=m.exclusivas>0?eur(m.honNeto/m.exclusivas):'—';
+  renderFunnel(m);
+  firstPaint=false;
+}
+
+/* ===================== INPUTS ===================== */
+function syncInputs(){
+  document.querySelectorAll('[data-in]').forEach(inp=>{
+    const k=inp.dataset.in;
+    inp.value = (k==='inversion') ? grp(S[k]) : String(S[k]).replace('.',',');
+  });
+}
+document.addEventListener('input',e=>{
+  const inp=e.target;
+  if(inp.dataset && inp.dataset.in!=null){ S[inp.dataset.in]=num(inp.value); refresh(); }
+  if(inp.classList && inp.classList.contains('pin')){
+    const tr=inp.closest('.prow'); if(!tr)return;
+    const i=+tr.dataset.row, k=inp.dataset.k;
+    rows[i][k]= (k==='hon'||k==='aios') ? num(inp.value) : (inp.value.trim()===''?'':num(inp.value));
+    refresh();
+  }
+});
+document.addEventListener('focus',e=>{
+  if(e.target.tagName==='INPUT')try{e.target.select();}catch(_){}
+},true);
+document.addEventListener('blur',e=>{
+  const inp=e.target;
+  if(inp.classList && inp.classList.contains('pin') && (inp.dataset.k==='valor'||inp.dataset.k==='gastos')){
+    const v=inp.value.trim(); inp.value = v===''?'':grp(num(v));
+  }
+},true);
+
+/* ===================== BOTONES ===================== */
+document.getElementById('addrow').addEventListener('click',()=>{
+  rows.push({...ROW_DEF}); renderRows(); refresh();
+});
+document.addEventListener('click',e=>{
+  const del=e.target.closest('[data-del]');
+  if(del){ const i=+del.dataset.del; rows.splice(i,1); if(!rows.length)rows.push({...ROW_DEF}); renderRows(); refresh(); }
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  Object.assign(S,DEFAULTS); syncInputs(); refresh();
+});
+document.getElementById('fs').addEventListener('click',()=>{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+});
+
+/* ===================== FONDO: skyline + parallax ===================== */
+(function(){
+  const sky=document.getElementById('sky');
+  const hs=[70,110,88,140,96,168,120,150,84,132,104,76,146,92,118];
+  sky.innerHTML=hs.map((h,i)=>`<div class="bld" style="height:${h}px;animation-delay:${(i%5)*.7}s"></div>`).join('');
+})();
+(function(){
+  const blobs=[...document.querySelectorAll('.blob')];
+  let tx=0,ty=0,cx=0,cy=0;
+  addEventListener('mousemove',e=>{
+    tx=(e.clientX/innerWidth-.5); ty=(e.clientY/innerHeight-.5);
+  });
+  (function loop(){
+    cx+=(tx-cx)*.04; cy+=(ty-cy)*.04;
+    blobs.forEach(b=>{
+      const f=+b.dataset.px;
+      b.style.translate=`${cx*f}px ${cy*f}px`;
+    });
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ===================== INIT ===================== */
+syncInputs();
+renderRows();
+refresh();
+</script>
+</body>
+</html>
